@@ -19,6 +19,9 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
 - Live geprüft: Jolpica 2026 (Sprint-Wochenenden: `SprintQualifying` + `Sprint`), fiawec.com.
 - Discord (Server „Suchtpotenzial“, ID 744290162531500103): Kanal `#rennwochenende`
   (1568025623362936954), Rolle `@Rennfans` (1568024849144750190, erwähnbar), Webhook „Rennwochenende“.
+  Kanal ist privat (nicht mit Kategorie synchronisiert): @everyone sieht ihn nicht; @Rennfans darf
+  lesen/reagieren, aber nicht schreiben/Threads erstellen/verwalten; Admin + Inhaber (haben ohnehin
+  Administrator-Recht) dürfen alles. Der Webhook postet unabhängig von Kanalrechten.
 - Weiterhin manuell: IMSA, GTWC (keine maschinenlesbaren Feeds mit Uhrzeiten gefunden).
 - Windows lokal: `zoneinfo` braucht dort das Paket `tzdata` (auf dem Ubuntu-Runner nicht nötig).
 
