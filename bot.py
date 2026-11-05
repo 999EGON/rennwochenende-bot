@@ -232,8 +232,23 @@ def datei_events(pfad: Path) -> list[Event]:
         tz = ZoneInfo(eintrag.get("zeitzone", "Europe/Berlin"))
         sessions = []
         for s in eintrag.get("sessions", []):
+            if len(s["start"].strip()) == 10:
+                # Nur Datum ("JJJJ-MM-TT"): Uhrzeit noch nicht veröffentlicht
+                tag = date.fromisoformat(s["start"].strip())
+                sessions.append(Session(s["name"], datetime.combine(tag, time(12, 0), BERLIN),
+                                        bestaetigt=False))
+                continue
             lokal = datetime.strptime(s["start"], "%Y-%m-%d %H:%M").replace(tzinfo=tz)
             sessions.append(Session(s["name"], lokal.astimezone(BERLIN)))
+        if not sessions and "datum_bis" in eintrag:
+            # Nur Termin des Wochenendes bekannt, noch kein Zeitplan
+            von = date.fromisoformat(str(eintrag.get("datum_von", eintrag["datum_bis"])))
+            bis = date.fromisoformat(str(eintrag["datum_bis"]))
+            text = f"Wochenende {von:%d.%m.}–{bis:%d.%m.}, Zeitplan folgt"
+            sessions.append(Session(text, datetime.combine(bis, time(12, 0), BERLIN),
+                                    bestaetigt=False))
+        if not sessions:
+            continue
         events.append(Event(eintrag["serie"].upper(), eintrag["name"],
                             eintrag.get("strecke", ""), sessions))
     return events
@@ -304,6 +319,8 @@ def session_zeile(s: Session) -> str:
     tag = WOCHENTAGE[s.start.weekday()]
     fett = s.name.startswith("Rennen") or s.name == "Sprint"
     name = f"**{s.name}**" if fett else s.name
+    if not s.bestaetigt and "Zeitplan folgt" in s.name:
+        return f"🗓️ {s.name}"
     if not s.bestaetigt:
         return f"`{tag} {s.start:%d.%m.} · --:--` {name} *(Zeit folgt)*"
     return f"`{tag} {s.start:%d.%m.} · {s.start:%H:%M}` {name}"

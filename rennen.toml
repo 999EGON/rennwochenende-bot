@@ -24,6 +24,296 @@
 #           America/Chicago (Road America, COTA)  America/Los_Angeles (Long Beach, Laguna Seca)
 #   Sonst:  Asia/Tokyo, Asia/Shanghai, Asia/Kuala_Lumpur (Sepang), Asia/Bangkok
 
+# Einträge nur mit Termin (datum_von/datum_bis, ohne sessions) erscheinen in der
+# Wochenübersicht als „Zeitplan folgt“ und lösen noch KEINE Erinnerung aus.
+# Sobald der offizielle Zeitplan da ist: sessions mit Uhrzeit ergänzen (siehe Vorlage),
+# dann kommt für jede Session eine eigene Erinnerung mit Ping.
+# Eine Session nur mit Datum ("JJJJ-MM-TT") geht auch – sie gilt dann ebenfalls als unbestätigt.
+
+# --- IMSA WeatherTech SportsCar Championship 2027 ------------------------
+# Quelle: IMSA-Pressemitteilung 19.03.2026 (u. a. speedsport.com). Saison 2026 ist beendet.
+
+[[rennen]]
+serie     = "IMSA"
+name      = "24 Stunden von Daytona"
+strecke   = "Daytona International Speedway"
+zeitzone  = "America/New_York"
+datum_von = "2027-01-28"
+datum_bis = "2027-01-31"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "12 Stunden von Sebring"
+strecke   = "Sebring International Raceway"
+zeitzone  = "America/New_York"
+datum_von = "2027-03-17"
+datum_bis = "2027-03-20"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Grand Prix von Long Beach"
+strecke   = "Long Beach Street Circuit"
+zeitzone  = "America/Los_Angeles"
+datum_von = "2027-04-16"
+datum_bis = "2027-04-17"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Laguna Seca"
+strecke   = "WeatherTech Raceway Laguna Seca"
+zeitzone  = "America/Los_Angeles"
+datum_von = "2027-04-30"
+datum_bis = "2027-05-02"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Detroit Grand Prix"
+strecke   = "Detroit Street Circuit"
+zeitzone  = "America/Detroit"
+datum_von = "2027-06-04"
+datum_bis = "2027-06-05"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "6 Stunden von Watkins Glen"
+strecke   = "Watkins Glen International"
+zeitzone  = "America/New_York"
+datum_von = "2027-06-24"
+datum_bis = "2027-06-27"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Canadian Tire Motorsport Park"
+strecke   = "Canadian Tire Motorsport Park"
+zeitzone  = "America/Toronto"
+datum_von = "2027-07-09"
+datum_bis = "2027-07-11"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Road America"
+strecke   = "Road America"
+zeitzone  = "America/Chicago"
+datum_von = "2027-07-29"
+datum_bis = "2027-08-01"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Virginia International Raceway"
+strecke   = "Virginia International Raceway"
+zeitzone  = "America/New_York"
+datum_von = "2027-08-20"
+datum_bis = "2027-08-22"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Battle on the Bricks"
+strecke   = "Indianapolis Motor Speedway"
+zeitzone  = "America/Indiana/Indianapolis"
+datum_von = "2027-09-17"
+datum_bis = "2027-09-19"
+
+[[rennen]]
+serie     = "IMSA"
+name      = "Petit Le Mans"
+strecke   = "Michelin Raceway Road Atlanta"
+zeitzone  = "America/New_York"
+datum_von = "2027-10-06"
+datum_bis = "2027-10-09"
+
+# --- GT World Challenge Europe 2027 -----------------------------------------
+# Quelle: gt-world-challenge-europe.com/calendar (Saison 2027). Saison 2026 ist beendet.
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Paul Ricard (Endurance)"
+strecke   = "Circuit Paul Ricard"
+zeitzone  = "Europe/Paris"
+datum_von = "2027-04-15"
+datum_bis = "2027-04-18"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Brands Hatch (Sprint)"
+strecke   = "Brands Hatch"
+zeitzone  = "Europe/London"
+datum_von = "2027-05-01"
+datum_bis = "2027-05-02"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Imola (Endurance)"
+strecke   = "Imola"
+zeitzone  = "Europe/Rome"
+datum_von = "2027-05-21"
+datum_bis = "2027-05-23"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – 24 Stunden von Spa (Endurance)"
+strecke   = "Circuit de Spa-Francorchamps"
+zeitzone  = "Europe/Brussels"
+datum_von = "2027-06-24"
+datum_bis = "2027-06-27"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Misano (Sprint)"
+strecke   = "Misano World Circuit"
+zeitzone  = "Europe/Rome"
+datum_von = "2027-07-16"
+datum_bis = "2027-07-18"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Magny-Cours (Sprint)"
+strecke   = "Circuit de Nevers Magny-Cours"
+zeitzone  = "Europe/Paris"
+datum_von = "2027-07-30"
+datum_bis = "2027-08-01"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Nürburgring (Endurance)"
+strecke   = "Nürburgring"
+zeitzone  = "Europe/Berlin"
+datum_von = "2027-08-27"
+datum_bis = "2027-08-29"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Zandvoort (Sprint)"
+strecke   = "Circuit Zandvoort"
+zeitzone  = "Europe/Amsterdam"
+datum_von = "2027-09-17"
+datum_bis = "2027-09-19"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Hungaroring (Sprint)"
+strecke   = "Hungaroring"
+zeitzone  = "Europe/Budapest"
+datum_von = "2027-10-01"
+datum_bis = "2027-10-03"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Europe – Barcelona (Endurance)"
+strecke   = "Circuit de Barcelona-Catalunya"
+zeitzone  = "Europe/Madrid"
+datum_von = "2027-10-22"
+datum_bis = "2027-10-24"
+
+# --- GT World Challenge America 2027 ----------------------------------------
+# Quelle: gt-world-challenge-america.com/calendar (Saison 2027)
+
+[[rennen]]
+serie     = "GTWC"
+name      = "America – Sonoma"
+strecke   = "Sonoma Raceway"
+zeitzone  = "America/Los_Angeles"
+datum_von = "2027-04-02"
+datum_bis = "2027-04-04"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "America – COTA"
+strecke   = "Circuit of The Americas"
+zeitzone  = "America/Chicago"
+datum_von = "2027-05-07"
+datum_bis = "2027-05-08"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "America – Watkins Glen"
+strecke   = "Watkins Glen International"
+zeitzone  = "America/New_York"
+datum_von = "2027-05-21"
+datum_bis = "2027-05-23"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "America – Road Atlanta"
+strecke   = "Michelin Raceway Road Atlanta"
+zeitzone  = "America/New_York"
+datum_von = "2027-06-18"
+datum_bis = "2027-06-20"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "America – Road America"
+strecke   = "Road America"
+zeitzone  = "America/Chicago"
+datum_von = "2027-08-27"
+datum_bis = "2027-08-29"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "America – Barber"
+strecke   = "Barber Motorsports Park"
+zeitzone  = "America/Chicago"
+datum_von = "2027-09-10"
+datum_bis = "2027-09-12"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "America – Indianapolis"
+strecke   = "Indianapolis Motor Speedway"
+zeitzone  = "America/Indiana/Indianapolis"
+datum_von = "2027-10-01"
+datum_bis = "2027-10-03"
+
+# --- GT World Challenge Asia 2027 -------------------------------------------
+# Quelle: gt-world-challenge-asia.com/calendar (Saison 2027)
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Asia – Sepang"
+strecke   = "Sepang International Circuit"
+zeitzone  = "Asia/Kuala_Lumpur"
+datum_von = "2027-04-02"
+datum_bis = "2027-04-04"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Asia – Buriram"
+strecke   = "Chang International Circuit"
+zeitzone  = "Asia/Bangkok"
+datum_von = "2027-04-30"
+datum_bis = "2027-05-02"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Asia – Suzuka"
+strecke   = "Suzuka International Circuit"
+zeitzone  = "Asia/Tokyo"
+datum_von = "2027-06-11"
+datum_bis = "2027-06-13"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Asia – Fuji"
+strecke   = "Fuji International Speedway"
+zeitzone  = "Asia/Tokyo"
+datum_von = "2027-07-09"
+datum_bis = "2027-07-11"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Asia – Peking"
+strecke   = "Beijing Street Circuit"
+zeitzone  = "Asia/Shanghai"
+datum_von = "2027-10-01"
+datum_bis = "2027-10-03"
+
+[[rennen]]
+serie     = "GTWC"
+name      = "Asia – Shanghai"
+strecke   = "Shanghai International Circuit"
+zeitzone  = "Asia/Shanghai"
+datum_von = "2027-10-22"
+datum_bis = "2027-10-24"
+
 # --- Vorlage zum Kopieren ----------------------------------------------------
 #
 # [[rennen]]
