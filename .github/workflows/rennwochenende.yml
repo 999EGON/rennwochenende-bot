@@ -1,0 +1,26 @@
+name: Rennwochenende posten
+
+on:
+  schedule:
+    # Jeden Donnerstag um 17:07 UTC (= 18:07 Uhr Winterzeit / 19:07 Uhr Sommerzeit in Berlin)
+    - cron: "7 17 * * 4"
+  workflow_dispatch: {}   # erlaubt manuelles Auslösen zum Testen
+
+jobs:
+  posten:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rennen des Wochenendes posten
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          # Rolle auch bei der Wochenübersicht pingen? Dann das # vor der nächsten Zeile entfernen.
+          # DISCORD_ROLLEN_ID: ${{ vars.DISCORD_ROLLEN_ID }}
+          F1_TRAININGS: "ja"                # "nein" = freie Trainings in der Übersicht ausblenden
+          LEERES_WOCHENENDE_POSTEN: "ja"    # "nein" = bei rennfreien Wochenenden nichts posten
+          WEC_AUTOMATISCH: "ja"             # WEC-Zeitplan automatisch von fiawec.com laden
+        run: python bot.py

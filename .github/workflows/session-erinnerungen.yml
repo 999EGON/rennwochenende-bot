@@ -1,0 +1,47 @@
+name: Session-Erinnerungen
+
+on:
+  schedule:
+    # Alle 15 Minuten von Donnerstagmorgen bis Sonntagnacht (Zeiten in UTC).
+    # Bewusst nicht zur vollen Stunde (:00), dort verspätet GitHub geplante Läufe am häufigsten.
+    - cron: "7,22,37,52 5-23 * * 4"
+    - cron: "7,22,37,52 * * * 5,6,0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # damit der Bot sich merken kann, was schon gepostet wurde
+
+concurrency:
+  group: session-erinnerungen
+  cancel-in-progress: false
+
+jobs:
+  erinnern:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Erinnerungen für bald startende Sessions posten
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          # Optional: eigener Kanal nur für die Erinnerungen (leer = gleicher Kanal wie Übersicht)
+          ERINNERUNGEN_WEBHOOK_URL: ${{ secrets.ERINNERUNGEN_WEBHOOK_URL }}
+          # Diese Rolle wird bei jeder Erinnerung gepingt (Repository-Variable, leer = kein Ping)
+          DISCORD_ROLLEN_ID: ${{ vars.DISCORD_ROLLEN_ID }}
+          VORLAUF_MINUTEN: "30"   # wie viele Minuten vor dem Start erinnert wird
+          WEC_AUTOMATISCH: "ja"   # WEC-Zeitplan automatisch von fiawec.com laden
+        run: python bot.py --erinnerungen
+      - name: Merken, was gepostet wurde
+        if: always()
+        run: |
+          if [ -f gepostet.json ] && [ -n "$(git status --porcelain gepostet.json)" ]; then
+            git config user.name "rennwochenende-bot"
+            git config user.email "rennwochenende-bot@users.noreply.github.com"
+            git add gepostet.json
+            git commit -m "Gepostete Sessions aktualisiert"
+            git pull --rebase --quiet || true
+            git push
+          fi

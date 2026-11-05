@@ -1,0 +1,47 @@
+# Rennkalender für IMSA und GT World Challenge
+# ------------------------------------------------
+# Formel 1 und FIA WEC lädt der Bot automatisch – hier nur die anderen Serien eintragen.
+# (Ein WEC-Eintrag hier würde zusätzlich zum automatischen Import erscheinen.
+#  Automatischen WEC-Import abschalten: WEC_AUTOMATISCH: "nein" in den Workflows.)
+#
+# serie     = "IMSA" oder "GTWC" (oder "WEC", s. o.)
+# zeitzone  = Zeitzone, in der du die Zeiten unten einträgst. Am einfachsten:
+#             die Ortszeit der Strecke so, wie sie im offiziellen Zeitplan steht
+#             (z. B. "America/New_York", "Europe/Brussels").
+#             Der Bot rechnet automatisch in Berliner Zeit um.
+#             Du kannst auch direkt "Europe/Berlin" nehmen.
+# sessions  = beliebig viele Einträge, Format "JJJJ-MM-TT HH:MM"
+#
+# Wo gibt es die offiziellen Zeitpläne?
+#   IMSA: imsa.com → Event → "Schedule" (PDF "Official Schedule")
+#   GTWC: gt-world-challenge-europe.com/event/<id>/<strecke> (Tabelle mit Ortszeit + GMT)
+#         gt-world-challenge-america.com / gt-world-challenge-asia.com analog
+#
+# Nützliche Zeitzonen:
+#   Europa: Europe/Brussels (Spa), Europe/Rome (Monza/Misano), Europe/Paris (Magny-Cours, Paul Ricard)
+#           Europe/London (Brands Hatch), Europe/Amsterdam (Zandvoort), Europe/Berlin (Nürburgring)
+#   USA:    America/New_York (Daytona, Sebring, Watkins Glen, Road Atlanta)
+#           America/Chicago (Road America, COTA)  America/Los_Angeles (Long Beach, Laguna Seca)
+#   Sonst:  Asia/Tokyo, Asia/Shanghai, Asia/Kuala_Lumpur (Sepang), Asia/Bangkok
+
+# --- Vorlage zum Kopieren ----------------------------------------------------
+#
+# [[rennen]]
+# serie    = "IMSA"
+# name     = "24 Stunden von Daytona"
+# strecke  = "Daytona International Speedway"
+# zeitzone = "America/New_York"
+# sessions = [
+#   { name = "Qualifying",    start = "JJJJ-MM-TT HH:MM" },
+#   { name = "Rennen (24 h)", start = "JJJJ-MM-TT HH:MM" },
+# ]
+#
+# [[rennen]]
+# serie    = "GTWC"
+# name     = "Sprint Cup – Misano"
+# strecke  = "Misano World Circuit"
+# zeitzone = "Europe/Rome"
+# sessions = [
+#   { name = "Rennen 1", start = "JJJJ-MM-TT HH:MM" },
+#   { name = "Rennen 2", start = "JJJJ-MM-TT HH:MM" },
+# ]
