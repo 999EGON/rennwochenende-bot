@@ -2,10 +2,11 @@ name: Session-Erinnerungen
 
 on:
   schedule:
-    # Alle 15 Minuten von Donnerstagmorgen bis Sonntagnacht (Zeiten in UTC).
+    # Jeden Tag alle 15 Minuten (Zeiten in UTC), damit auch Sessions unter der Woche
+    # (z. B. Le Mans, Sebring, Petit Le Mans am Mittwoch) erinnert werden. Steht nichts an,
+    # beendet sich der Bot nach wenigen Sekunden. Öffentliches Repo: Actions-Minuten kostenlos.
     # Bewusst nicht zur vollen Stunde (:00), dort verspätet GitHub geplante Läufe am häufigsten.
-    - cron: "7,22,37,52 5-23 * * 4"
-    - cron: "7,22,37,52 * * * 5,6,0"
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch: {}
 
 permissions:

@@ -14,7 +14,7 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
   am 06.–08.11.2026 läuft 6h Monza). Entfernt.
 - `senden()`: `?wait=true`, Retry bei 429/5xx mit `Retry-After`; ein Fehler bricht die übrigen
   Erinnerungen nicht mehr ab. Toleranz nach hinten 20 min.
-- Cron auf Minuten 7/22/37/52 (nicht :00), Donnerstag ab 05 UTC. `DISCORD_ROLLEN_ID` ist jetzt
+- Cron auf Minuten 7/22/37/52 (nicht :00), inzwischen täglich. `DISCORD_ROLLEN_ID` ist jetzt
   eine **Repository-Variable** (`vars.`), kein Secret. `F1_TRAININGS` in der Übersicht = `ja`.
 - Live geprüft: Jolpica 2026 (Sprint-Wochenenden: `SprintQualifying` + `Sprint`), fiawec.com.
 - Discord: eigener privater Kanal mit Webhook, gepingt wird eine eigene, erwähnbare Rolle
@@ -33,6 +33,21 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
   60 min nach Start → Nachricht „🟢 Läuft bereits“. `gepostet.json` wird nach jedem Post gespeichert.
   Workflow `timeout-minutes: 80`. Kosten: wartende Jobs verbrauchen Actions-Minuten (privates
   Repo: 2.000 frei/Monat) – bei Engpass Repo öffentlich machen oder externen Trigger nutzen.
+
+## Update 06.11.2026 (abends): Lücken aus der Abdeckungsprüfung behoben
+
+- Prüfung per Sub-Agent: F1 2026 und WEC Monza vollständig abgedeckt. F1 FP2 Brasilien kam
+  pünktlich 19:30 (Warte-Logik live bestätigt).
+- **Cron jetzt täglich** (`7,22,37,52 * * * *`), vorher nur Do–So → Mittwochs-Sessions
+  (Le Mans, Sebring, Petit Le Mans) wären nie erinnert worden. Repo ist **öffentlich**, Minuten gratis.
+- **Quellen einzeln abgesichert:** `alle_events()` fängt pro Quelle jede Exception ab;
+  `_http_text`-Aufrufer fangen `OSError`/`http.client.HTTPException` (vorher killte z. B.
+  `ConnectionResetError` bei fiawec.com auch F1). ld+json-Listen werden ignoriert.
+- **F1 ohne Uhrzeit** (`time` fehlt in Jolpica) → `_f1_session()` legt Session mit
+  `bestaetigt=False` an (Übersicht „Zeit folgt“, keine Erinnerung) statt 00:00 UTC.
+- Weiterhin offen: IMSA/GTWC haben in `rennen.toml` nur Daten, **keine Uhrzeiten** → keine
+  Erinnerungen, bis offizielle Zeitpläne eingetragen sind. Push-Fehler von `gepostet.json`
+  kann zu Doppel-Post führen (kein Retry).
 
 ## Ziel des Projekts (Wünsche des Nutzers)
 
@@ -71,7 +86,7 @@ Alle Texte, Nachrichten, Kommentare und Variablennamen sind **auf Deutsch**. Das
 | `bot.py` | Gesamte Logik (~370 Zeilen). Zwei Modi: Wochenübersicht (Standard) und `--erinnerungen`. |
 | `rennen.toml` | Manueller Kalender für WEC/IMSA/GTWC. Enthält aktuell nur WEC Bahrain + kommentierte Vorlagen. |
 | `.github/workflows/rennwochenende.yml` | Wochenübersicht, Do 17:00 UTC (`0 17 * * 4`). |
-| `.github/workflows/session-erinnerungen.yml` | Erinnerungen, alle 15 min Do 20–23 UTC und Fr/Sa/So ganztägig. Committet `gepostet.json`. |
+| `.github/workflows/session-erinnerungen.yml` | Erinnerungen, täglich alle 15 min (:07/:22/:37/:52 UTC). Committet `gepostet.json`. |
 | `README.md` | Einrichtungsanleitung für den Nutzer (Webhook, Secrets, Rolle, Einstellungen). |
 | `gepostet.json` | Wird zur Laufzeit erzeugt: `{"SERIE|Event|Session|ISO-Start": "ISO-Start"}`, Einträge > 7 Tage werden gelöscht. |
 
@@ -133,10 +148,9 @@ API-Antwort verwendet.
   Eintragen bitte nur aus offiziellen Quellen, keine Zeiten raten.
   Unklar: Welche GTWC-Regionen der Nutzer will. Bisher ist nur „GTWC“ als eine Serie vorgesehen.
 - **GitHub-Cron ist ungenau** (oft einige Minuten Verspätung). Deshalb gibt es das
-  15-min-Fenster und 15 min Toleranz nach hinten. Sessions vor Fr ~21:00 UTC am Donnerstag
-  werden nicht erinnert, z. B. WEC/Le-Mans-Sessions am Donnerstag.
-- **Kontingent:** ca. 1.300 Actions-Minuten/Monat. Bei privatem Repo liegt das unter den
-  kostenlosen 2.000, bei öffentlichem Repo ist es unbegrenzt.
+  Warte- und Nachhol-Fenster (siehe Updates oben). Cron läuft inzwischen täglich.
+- **Kontingent:** Repo ist öffentlich, Actions-Minuten unbegrenzt. Bei privatem Repo würde
+  der tägliche Cron das freie Kontingent (2.000/Monat) voraussichtlich überschreiten.
 - GitHub deaktiviert geplante Workflows nach 60 Tagen ohne Repo-Aktivität. Die automatischen
   Commits von `gepostet.json` sollten das verhindern. Nicht verifiziert.
 - Max. 10 Embeds pro Übersicht (Discord-Limit). Weitere Events werden abgeschnitten.

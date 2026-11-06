@@ -79,16 +79,17 @@ Zeile `DISCORD_ROLLEN_ID` entfernen.
 |---|---|
 | `VORLAUF_MINUTEN: "30"` | Wie viele Minuten vor dem Start erinnert wird |
 
-Der Bot prüft von Donnerstagmorgen bis Sonntagnacht alle 15 Minuten (jeweils zur Minute
-:07/:22/:37/:52, weil GitHub Läufe zur vollen Stunde oft verspätet), welche Session bald
-startet. Die Erinnerung kommt deshalb etwa 15–30 Minuten vor dem Start. Fällt ein Lauf aus,
-wird bis 20 Minuten nach dem Start noch nachträglich erinnert. In `gepostet.json` merkt er sich, was
-schon verschickt wurde, damit nichts doppelt kommt – diese Datei legt er selbst an.
+Der Bot prüft jeden Tag alle 15 Minuten (jeweils zur Minute :07/:22/:37/:52, weil GitHub
+Läufe zur vollen Stunde oft verspätet), welche Session in den nächsten 80 Minuten startet,
+und wartet im Lauf bis 30 Minuten vor dem Start. Fällt ein Lauf aus, wird bis 60 Minuten nach
+dem Start noch nachträglich erinnert („Läuft bereits“). Fällt eine Quelle aus (z. B. fiawec.com),
+laufen die anderen Serien trotzdem weiter. In `gepostet.json` merkt er sich, was schon
+verschickt wurde, damit nichts doppelt kommt – diese Datei legt er selbst an.
 
 Kosten: Bei einem **öffentlichen** Repository sind GitHub Actions unbegrenzt kostenlos
 (die Webhook-URL bleibt trotzdem geheim, sie liegt in den Secrets). Bei einem **privaten**
-Repository liegt der Verbrauch mit ca. 1.600 Minuten pro Monat unter dem kostenlosen
-Kontingent von 2.000 Minuten.
+Repository würde der tägliche Lauf das kostenlose Kontingent von 2.000 Minuten pro Monat
+voraussichtlich überschreiten.
 
 ## Rennen eintragen (`rennen.toml`)
 ```toml

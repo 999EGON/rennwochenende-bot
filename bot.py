@@ -25,6 +25,7 @@ Aufruf:
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
 import re
@@ -117,9 +118,13 @@ def _http_json(url: str) -> dict:
     return json.loads(_http_text(url))
 
 
-def _f1_zeit(d: str, t: str | None) -> datetime:
-    t = (t or "00:00:00Z").replace("Z", "")
-    return datetime.fromisoformat(f"{d}T{t}").replace(tzinfo=UTC).astimezone(BERLIN)
+def _f1_session(name: str, d: str, t: str | None, training: bool = False) -> Session:
+    """F1-Session aus Datum + Uhrzeit (UTC). Fehlt die Uhrzeit, ist sie noch nicht bestätigt."""
+    if not t:
+        return Session(name, datetime.combine(date.fromisoformat(d), time(12, 0), BERLIN),
+                       training, bestaetigt=False)
+    start = datetime.fromisoformat(f"{d}T{t.replace('Z', '')}").replace(tzinfo=UTC)
+    return Session(name, start.astimezone(BERLIN), training)
 
 
 def f1_events(jahre: set[int]) -> list[Event]:
@@ -129,7 +134,7 @@ def f1_events(jahre: set[int]) -> list[Event]:
         url = f"https://api.jolpi.ca/ergast/f1/{jahr}/races/?limit=100"
         try:
             rennen = _http_json(url)["MRData"]["RaceTable"]["Races"]
-        except (urllib.error.URLError, KeyError, ValueError, TimeoutError) as e:
+        except (OSError, http.client.HTTPException, KeyError, ValueError) as e:
             print(f"⚠️  F1-Kalender {jahr} konnte nicht geladen werden: {e}", file=sys.stderr)
             continue
         for r in rennen:
@@ -137,8 +142,8 @@ def f1_events(jahre: set[int]) -> list[Event]:
             for feld, anzeige, ist_training in F1_SESSIONS:
                 if feld in r:
                     s = r[feld]
-                    sessions.append(Session(anzeige, _f1_zeit(s["date"], s.get("time")), ist_training))
-            sessions.append(Session("Rennen", _f1_zeit(r["date"], r.get("time"))))
+                    sessions.append(_f1_session(anzeige, s["date"], s.get("time"), ist_training))
+            sessions.append(_f1_session("Rennen", r["date"], r.get("time")))
             strecke = r.get("Circuit", {}).get("circuitName", "")
             events.append(Event("F1", r["raceName"].replace("Grand Prix", "GP"), strecke, sessions))
     return events
@@ -173,7 +178,7 @@ def wec_events(jahre: set[int]) -> list[Event]:
     """
     try:
         startseite = _http_text(f"{WEC_BASIS}/en/")
-    except (urllib.error.URLError, TimeoutError) as e:
+    except (OSError, http.client.HTTPException) as e:
         print(f"⚠️  WEC-Kalender konnte nicht geladen werden: {e}", file=sys.stderr)
         return []
 
@@ -186,7 +191,7 @@ def wec_events(jahre: set[int]) -> list[Event]:
             daten = None
             for block in re.findall(r'(?s)<script type="application/ld\+json">(.*?)</script>', seite):
                 kandidat = json.loads(block)
-                if kandidat.get("@type") == "SportsEvent" and kandidat.get("subEvent"):
+                if isinstance(kandidat, dict) and kandidat.get("@type") == "SportsEvent" and kandidat.get("subEvent"):
                     daten = kandidat
                     break
             if daten is None:
@@ -198,7 +203,7 @@ def wec_events(jahre: set[int]) -> list[Event]:
                     continue
                 start = datetime.fromisoformat(sub["startDate"])
                 roh.append((_wec_session_name(sub["name"], eventname), start))
-        except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
+        except (OSError, http.client.HTTPException, ValueError, KeyError, TypeError) as e:
             print(f"⚠️  WEC-Rennen {slug} konnte nicht gelesen werden: {e}", file=sys.stderr)
             continue
 
@@ -255,10 +260,17 @@ def datei_events(pfad: Path) -> list[Event]:
 
 
 def alle_events(von: datetime, bis: datetime, datei: Path) -> list[Event]:
+    """Alle Quellen laden. Fällt eine Quelle aus, laufen die anderen trotzdem weiter."""
     jahre = {von.year, bis.year}
-    events = f1_events(jahre) + datei_events(datei)
+    quellen = [("F1", lambda: f1_events(jahre)), (datei.name, lambda: datei_events(datei))]
     if ja(os.getenv("WEC_AUTOMATISCH"), True):
-        events += wec_events(jahre)
+        quellen.append(("WEC", lambda: wec_events(jahre)))
+    events: list[Event] = []
+    for name, laden in quellen:
+        try:
+            events += laden()
+        except Exception as e:  # bewusst breit: eine kaputte Quelle darf die anderen nicht stoppen
+            print(f"⚠️  Quelle {name} übersprungen ({type(e).__name__}: {e})", file=sys.stderr)
     return events
 
 
