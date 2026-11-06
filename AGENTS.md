@@ -25,6 +25,16 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
 - Weiterhin manuell: IMSA, GTWC (keine maschinenlesbaren Feeds mit Uhrzeiten gefunden).
 - Windows lokal: `zoneinfo` braucht dort das Paket `tzdata` (auf dem Ubuntu-Runner nicht nötig).
 
+## Update 06.11.2026: Erinnerungen robust gegen stündliche GitHub-Läufe
+
+- Live beobachtet: GitHub startet den 15-min-Cron oft nur **ca. einmal pro Stunde**. Dadurch
+  wurden WEC FP2 (14:30) und F1 FP1 (16:30) verpasst. F1 FP1 wurde nachträglich gepostet.
+- Neu in `modus_erinnerungen()`: Fenster `[jetzt − NACHHOL_MINUTEN, jetzt + VORLAUF + WARTEN_MINUTEN)`.
+  Zukünftige Sessions: Job wartet (`time.sleep`) bis Start − Vorlauf. Verpasste Sessions bis
+  60 min nach Start → Nachricht „🟢 Läuft bereits“. `gepostet.json` wird nach jedem Post gespeichert.
+  Workflow `timeout-minutes: 80`. Kosten: wartende Jobs verbrauchen Actions-Minuten (privates
+  Repo: 2.000 frei/Monat) – bei Engpass Repo öffentlich machen oder externen Trigger nutzen.
+
 ## Ziel des Projekts (Wünsche des Nutzers)
 
 Der Nutzer (deutschsprachig, Zeitzone Europe/Berlin) wollte einen Discord-Bot, der:
