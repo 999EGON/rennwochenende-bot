@@ -18,7 +18,7 @@ concurrency:
 jobs:
   erinnern:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 80   # Job darf bis zu 50 min auf die nächste Session warten
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -32,6 +32,8 @@ jobs:
           # Diese Rolle wird bei jeder Erinnerung gepingt (Repository-Variable, leer = kein Ping)
           DISCORD_ROLLEN_ID: ${{ vars.DISCORD_ROLLEN_ID }}
           VORLAUF_MINUTEN: "30"   # wie viele Minuten vor dem Start erinnert wird
+          WARTEN_MINUTEN: "50"    # so weit vorausschauen und im Job warten (GitHub startet oft nur stündlich)
+          NACHHOL_MINUTEN: "60"   # verpasste Sessions bis so lange nach dem Start nachträglich posten
           WEC_AUTOMATISCH: "ja"   # WEC-Zeitplan automatisch von fiawec.com laden
         run: python bot.py --erinnerungen
       - name: Merken, was gepostet wurde

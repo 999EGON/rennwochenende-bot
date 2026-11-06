@@ -349,13 +349,15 @@ def uebersicht(events: list[Event], start: datetime, leer_posten: bool) -> dict 
     return {"content": kopf, "embeds": embeds}
 
 
-def erinnerung(e: Event, s: Session) -> dict:
+def erinnerung(e: Event, s: Session, laeuft_bereits: bool = False) -> dict:
     info = serien_info(e.serie)
     unix = int(s.start.timestamp())
     tag = WOCHENTAGE[s.start.weekday()]
     zeilen = [
         f"🕒 **{tag} {s.start:%d.%m.} · {s.start:%H:%M} Uhr** (Berliner Zeit)",
-        f"⏳ Start <t:{unix}:R>",   # Discord zeigt das als „in 30 Minuten“ an
+        # Discord zeigt das als „in 30 Minuten“ bzw. „vor 20 Minuten“ an
+        f"🟢 **Läuft bereits** – gestartet <t:{unix}:R>" if laeuft_bereits
+        else f"⏳ Start <t:{unix}:R>",
     ]
     if e.strecke:
         zeilen.append(f"📍 {e.strecke}")
@@ -473,8 +475,13 @@ def modus_erinnerungen(args) -> int:
     jetzt = (datetime.strptime(args.jetzt, "%Y-%m-%d %H:%M").replace(tzinfo=BERLIN)
              if args.jetzt else datetime.now(BERLIN))
     vorlauf = timedelta(minutes=int(os.getenv("VORLAUF_MINUTEN", "30")))
-    # Etwas Toleranz nach hinten, falls GitHub den Lauf verspätet startet oder einen auslässt
-    von, bis = jetzt - timedelta(minutes=20), jetzt + vorlauf
+    # GitHub startet geplante Läufe oft nur etwa einmal pro Stunde statt alle 15 Minuten.
+    # Deshalb: (1) verpasste Sessions bis NACHHOL_MINUTEN nach dem Start nachträglich posten,
+    # (2) Sessions, die erst nach dem Vorlauf dran sind, bis WARTEN_MINUTEN vorausschauen und
+    #     im laufenden Job bis zum richtigen Zeitpunkt (Start − Vorlauf) warten.
+    nachholen = timedelta(minutes=int(os.getenv("NACHHOL_MINUTEN", "60")))
+    warten_max = timedelta(minutes=int(os.getenv("WARTEN_MINUTEN", "50")))
+    von, bis = jetzt - nachholen, jetzt + vorlauf + warten_max
 
     faellig = filtern(alle_events(von, bis, Path(args.datei)), von, bis)
     status = status_laden()
@@ -496,7 +503,20 @@ def modus_erinnerungen(args) -> int:
     rolle = rollen_id()
     fehler = 0
     for schluessel, e, s in offen:
-        payload = mit_ping(erinnerung(e, s), rolle)
+        ziel = s.start - vorlauf  # gewünschter Zeitpunkt der Erinnerung
+        if args.dry_run or args.jetzt:
+            aktuell = jetzt
+            if ziel > aktuell:
+                print(f"⏸️  würde bis {ziel:%H:%M} warten: {e.serie} {e.name} – {s.name}")
+                aktuell = ziel
+        else:
+            warte = (ziel - datetime.now(BERLIN)).total_seconds()
+            if warte > 0:
+                print(f"⏸️  Warte {warte / 60:.0f} min bis {ziel:%H:%M}: {e.serie} {e.name} – {s.name}",
+                      flush=True)
+                zeit.sleep(warte)
+            aktuell = datetime.now(BERLIN)
+        payload = mit_ping(erinnerung(e, s, laeuft_bereits=s.start <= aktuell), rolle)
         if args.dry_run:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
             continue
@@ -508,7 +528,8 @@ def modus_erinnerungen(args) -> int:
             fehler += 1
             continue
         status[schluessel] = s.start.isoformat()
-        print(f"✅ Erinnerung gepostet: {e.serie} {e.name} – {s.name}")
+        status_speichern(status, jetzt)  # sofort merken, falls der Job später abbricht
+        print(f"✅ Erinnerung gepostet: {e.serie} {e.name} – {s.name}", flush=True)
         zeit.sleep(1)  # Discord-Limit freundlich behandeln
 
     if not args.dry_run:
