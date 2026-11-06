@@ -17,11 +17,10 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
 - Cron auf Minuten 7/22/37/52 (nicht :00), Donnerstag ab 05 UTC. `DISCORD_ROLLEN_ID` ist jetzt
   eine **Repository-Variable** (`vars.`), kein Secret. `F1_TRAININGS` in der Übersicht = `ja`.
 - Live geprüft: Jolpica 2026 (Sprint-Wochenenden: `SprintQualifying` + `Sprint`), fiawec.com.
-- Discord (Server „Suchtpotenzial“, ID 744290162531500103): Kanal `#rennwochenende`
-  (1568025623362936954), Rolle `@Rennfans` (1568024849144750190, erwähnbar), Webhook „Rennwochenende“.
-  Kanal ist privat (nicht mit Kategorie synchronisiert): @everyone sieht ihn nicht; @Rennfans darf
-  lesen/reagieren, aber nicht schreiben/Threads erstellen/verwalten; Admin + Inhaber (haben ohnehin
-  Administrator-Recht) dürfen alles. Der Webhook postet unabhängig von Kanalrechten.
+- Discord: eigener privater Kanal mit Webhook, gepingt wird eine eigene, erwähnbare Rolle
+  (ID als Repository-Variable `DISCORD_ROLLEN_ID`). Nur Rollenmitglieder sehen den Kanal und dürfen
+  lesen/reagieren, schreiben/verwalten dürfen nur Admins. Der Webhook postet unabhängig von
+  Kanalrechten. Server-/Kanalnamen und IDs stehen bewusst nicht hier (öffentliches Repo).
 - Weiterhin manuell: IMSA, GTWC (keine maschinenlesbaren Feeds mit Uhrzeiten gefunden).
 - Windows lokal: `zoneinfo` braucht dort das Paket `tzdata` (auf dem Ubuntu-Runner nicht nötig).
 
