@@ -22,6 +22,11 @@ jobs:
     timeout-minutes: 80   # Job darf bis zu 50 min auf die nächste Session warten
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Immer den neuesten Stand von main holen. Ohne das bekommt ein Lauf, der in der
+          # Warteschlange stand, den Stand vom Anlegen – ohne die Einträge des Laufs davor,
+          # und postet dieselbe Session ein zweites Mal (so passiert am 07.11.2026).
+          ref: main
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -42,13 +47,32 @@ jobs:
       - name: Merken, was gepostet wurde
         if: always()
         run: |
-          if [ -n "$(git status --porcelain gepostet.json loeschen.json)" ]; then
-            git config user.name "rennwochenende-bot"
-            git config user.email "rennwochenende-bot@users.noreply.github.com"
+          git config user.name "rennwochenende-bot"
+          git config user.email "rennwochenende-bot@users.noreply.github.com"
+          # Eigene Stände sichern, auf den neuesten Stand von main setzen und beide vereinen.
+          # So gehen keine Einträge verloren, auch wenn main sich inzwischen geändert hat.
+          mkdir -p "$RUNNER_TEMP/eigen"
+          for datei in gepostet.json loeschen.json; do
+            if [ -f "$datei" ]; then cp "$datei" "$RUNNER_TEMP/eigen/"; fi
+          done
+          for versuch in 1 2 3; do
+            git fetch --quiet origin main
+            git reset --quiet --hard origin/main
+            python bot.py --status-vereinen "$RUNNER_TEMP/eigen"
+            if [ -z "$(git status --porcelain gepostet.json loeschen.json)" ]; then
+              echo "Nichts Neues zu speichern."
+              exit 0
+            fi
             for datei in gepostet.json loeschen.json; do
               if [ -f "$datei" ]; then git add "$datei"; fi
             done
-            git commit -m "Gepostete Sessions aktualisiert"
-            git pull --rebase --quiet || true
-            git push
-          fi
+            git commit --quiet -m "Gepostete Sessions aktualisiert"
+            if git push --quiet origin HEAD:main; then
+              echo "Gespeichert (Versuch $versuch)."
+              exit 0
+            fi
+            echo "Push abgelehnt, neuer Versuch …"
+            sleep 5
+          done
+          echo "::error::gepostet.json/loeschen.json konnten nicht gespeichert werden"
+          exit 1

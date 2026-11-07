@@ -560,7 +560,7 @@ def loeschliste_laden() -> dict:
     except (FileNotFoundError, ValueError):
         daten = {}
     daten.setdefault("offen", {})     # Nachrichten-ID -> {"ab": ISO, "webhook": Variablenname}
-    daten.setdefault("erledigt", {})  # gelöschte Wochenübersichten: ID -> ISO-Zeitpunkt
+    daten.setdefault("erledigt", {})  # gelöschte Nachrichten: ID -> ISO-Zeitpunkt
     return daten
 
 
@@ -598,15 +598,34 @@ def alte_nachrichten_loeschen(jetzt: datetime, dry_run: bool) -> None:
         except (RuntimeError, OSError, http.client.HTTPException) as fehler:
             print(f"⚠️  {name} {nid} konnte nicht gelöscht werden: {fehler}", file=sys.stderr)
             continue  # beim nächsten Lauf erneut versuchen
-        if art == "UEBERSICHT":
-            liste["erledigt"][nid] = jetzt.isoformat()
-        else:
-            liste["offen"].pop(nid, None)
+        liste["erledigt"][nid] = jetzt.isoformat()  # auch Erinnerungen, siehe status_vereinen()
+        liste["offen"].pop(nid, None)
         geaendert = True
         print(f"🗑️  {name} gelöscht ({nid})", flush=True)
         zeit.sleep(1)
     if geaendert:
         loeschliste_speichern(liste, jetzt)
+
+
+def status_vereinen(eigen_ordner: Path) -> int:
+    """Vereint die in diesem Lauf geschriebenen Dateien (eigen_ordner) mit dem aktuellen Stand
+    im Repo. Wird vom Workflow vor dem Push aufgerufen, damit kein Eintrag verloren geht."""
+    jetzt = datetime.now(BERLIN)
+    eigen_status = eigen_ordner / STATUS_DATEI.name
+    if eigen_status.exists():
+        status = status_laden()
+        status.update(json.loads(eigen_status.read_text(encoding="utf-8")))
+        status_speichern(status, jetzt)
+    eigen_liste = eigen_ordner / LOESCH_DATEI.name
+    if eigen_liste.exists():
+        liste = loeschliste_laden()
+        andere = json.loads(eigen_liste.read_text(encoding="utf-8"))
+        liste["erledigt"].update(andere.get("erledigt", {}))
+        liste["offen"].update(andere.get("offen", {}))
+        # Was in einem der beiden Stände schon gelöscht wurde, ist nicht mehr offen
+        liste["offen"] = {k: v for k, v in liste["offen"].items() if k not in liste["erledigt"]}
+        loeschliste_speichern(liste, jetzt)
+    return 0
 
 
 def modus_erinnerungen(args) -> int:
@@ -691,7 +710,11 @@ def main() -> int:
     p.add_argument("--datum", help="Übersicht: Stichtag JJJJ-MM-TT (Standard: heute)")
     p.add_argument("--jetzt", help='Erinnerungen: so tun, als wäre es "JJJJ-MM-TT HH:MM" (Berlin)')
     p.add_argument("--datei", default=str(HIER / "rennen.toml"), help="Pfad zur Renn-Datei")
+    p.add_argument("--status-vereinen", metavar="ORDNER",
+                   help="Workflow-intern: gepostet.json/loeschen.json aus ORDNER mit dem Repo-Stand vereinen")
     args = p.parse_args()
+    if args.status_vereinen:
+        return status_vereinen(Path(args.status_vereinen))
     return modus_erinnerungen(args) if args.erinnerungen else modus_uebersicht(args)
 
 

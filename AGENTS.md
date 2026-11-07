@@ -67,6 +67,17 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
 - Nachrichten von vor dieser Änderung haben keine gespeicherte ID und werden **nicht** gelöscht.
 - Getestet gegen einen nachgebauten Webhook (POST/DELETE), nicht gegen echtes Discord.
 
+## Fix 07.11.2026: Doppelte Erinnerung (F1 Qualifying Brasilien)
+
+- Ursache (Logs belegt): Lauf B stand in der concurrency-Warteschlange, während Lauf A wartete.
+  `actions/checkout` holt ohne `ref:` den SHA vom **Anlegen** des Laufs → B hatte `gepostet.json`
+  ohne As Eintrag und postete erneut; danach scheiterte sein Rebase (Konflikt `loeschen.json`).
+- Fix: `checkout` mit `ref: main` (beide Workflows). Commit-Schritt sichert die eigenen JSONs,
+  setzt auf `origin/main` zurück, vereint per `python bot.py --status-vereinen <ordner>`
+  (`status_vereinen()`: Schlüssel-Vereinigung; `loeschen.json`: was in `erledigt` steht, ist nicht
+  mehr `offen` – daher werden jetzt auch gelöschte Erinnerungen in `erledigt` vermerkt) und
+  pusht mit bis zu 3 Versuchen.
+
 ## Ziel des Projekts (Wünsche des Nutzers)
 
 Der Nutzer (deutschsprachig, Zeitzone Europe/Berlin) wollte einen Discord-Bot, der:
