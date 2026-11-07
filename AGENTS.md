@@ -49,6 +49,24 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
   Erinnerungen, bis offizielle Zeitpläne eingetragen sind. Push-Fehler von `gepostet.json`
   kann zu Doppel-Post führen (kein Retry).
 
+## Update 07.11.2026: Nachrichten automatisch löschen (Wunsch des Nutzers)
+
+- Erinnerungen werden **60 min nach Ende der Session** gelöscht, die Wochenübersicht **60 min
+  nach Ende der letzten Session des Wochenendes** (ohne Sessions: Mo 00:00).
+- `senden()` liefert die Discord-Antwort (`?wait=true` → `id`). Löschen per
+  `DELETE <webhook>/messages/<id>` (`nachricht_loeschen()`, 404 = schon weg).
+- Ende = Start + Dauer aus `session_ende()`: `F1_DAUER`, `ANDERE_DAUER` (Regex auf Session-Namen),
+  Rennen anderer Serien: Stunden aus Eventname („6 Stunden“, „24 Hours“, „Rolex 24“), sonst 180.
+  In `rennen.toml` optional `dauer = <Minuten>` pro Session.
+- Dateien, getrennt nach Schreiber (damit sich die Workflows nicht in die Quere kommen):
+  `loeschen.json` (nur Erinnerungs-Workflow: `offen` ID → {ab, webhook-Variable}, `erledigt`
+  = gelöschte Übersichts-IDs) und `uebersicht.json` (nur Übersichts-Workflow: id, loeschen_ab).
+  `rennwochenende.yml` hat dafür `contents: write` und einen Commit-Schritt.
+- Gelöscht wird zu Beginn jedes Erinnerungs-Laufs (`alte_nachrichten_loeschen()`), also bei
+  stündlichen Läufen bis ~1 h später. Schalter: `LOESCHEN`, `LOESCHEN_NACH_MINUTEN`.
+- Nachrichten von vor dieser Änderung haben keine gespeicherte ID und werden **nicht** gelöscht.
+- Getestet gegen einen nachgebauten Webhook (POST/DELETE), nicht gegen echtes Discord.
+
 ## Ziel des Projekts (Wünsche des Nutzers)
 
 Der Nutzer (deutschsprachig, Zeitzone Europe/Berlin) wollte einen Discord-Bot, der:

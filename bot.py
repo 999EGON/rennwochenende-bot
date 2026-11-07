@@ -43,6 +43,8 @@ BERLIN = ZoneInfo("Europe/Berlin")
 UTC = ZoneInfo("UTC")
 HIER = Path(__file__).resolve().parent
 STATUS_DATEI = HIER / "gepostet.json"
+LOESCH_DATEI = HIER / "loeschen.json"        # vom Erinnerungs-Lauf: welche Nachrichten wann weg sollen
+UEBERSICHT_DATEI = HIER / "uebersicht.json"  # vom Übersichts-Lauf: ID der letzten Wochenübersicht
 
 WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 MONATE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
@@ -68,6 +70,20 @@ F1_SESSIONS = [
 ]
 
 
+# Geschätzte Dauer der Sessions (Minuten), um das Ende zu berechnen. Erinnerungen werden
+# LOESCHEN_NACH_MINUTEN nach dem Ende gelöscht. In rennen.toml kann pro Session "dauer" stehen.
+F1_DAUER = {"FP1": 60, "FP2": 60, "FP3": 60, "Sprint-Qualifying": 45, "Sprint": 60,
+            "Qualifying": 60, "Rennen": 120}
+ANDERE_DAUER = [             # andere Serien: (Muster im Session-Namen, Minuten)
+    (r"(?i)hyperpole", 15),
+    (r"(?i)quali", 20),
+    (r"(?i)warm", 15),
+    (r"(?i)^(fp|training|practice)", 90),
+]
+STANDARD_DAUER = 60          # alles andere
+STANDARD_RENNDAUER = 180     # Rennen ohne Stundenangabe im Namen
+
+
 USER_AGENT = "rennwochenende-bot/1.2 (Discord-Webhook-Skript)"
 WEC_BASIS = "https://www.fiawec.com"
 
@@ -85,6 +101,7 @@ class Session:
     start: datetime          # immer in Berliner Zeit
     training: bool = False
     bestaetigt: bool = True  # False = Uhrzeit vom Veranstalter noch nicht veröffentlicht
+    dauer: int | None = None  # Minuten; None = aus Serie/Name schätzen (siehe session_ende)
 
 
 @dataclass
@@ -244,7 +261,8 @@ def datei_events(pfad: Path) -> list[Event]:
                                         bestaetigt=False))
                 continue
             lokal = datetime.strptime(s["start"], "%Y-%m-%d %H:%M").replace(tzinfo=tz)
-            sessions.append(Session(s["name"], lokal.astimezone(BERLIN)))
+            dauer = int(s["dauer"]) if "dauer" in s else None
+            sessions.append(Session(s["name"], lokal.astimezone(BERLIN), dauer=dauer))
         if not sessions and "datum_bis" in eintrag:
             # Nur Termin des Wochenendes bekannt, noch kein Zeitplan
             von = date.fromisoformat(str(eintrag.get("datum_von", eintrag["datum_bis"])))
@@ -308,6 +326,22 @@ def tage_filtern(events: list[Event], von: datetime, bis: datetime,
 # ---------------------------------------------------------------------------
 # Formatierung
 # ---------------------------------------------------------------------------
+def session_ende(e: Event, s: Session) -> datetime:
+    """Geschätztes Ende einer Session (Start + Dauer)."""
+    if s.dauer is not None:
+        minuten = s.dauer
+    elif e.serie == "F1":
+        minuten = F1_DAUER.get(s.name, STANDARD_DAUER)
+    elif re.match(r"(?i)(rennen|race)\b", s.name):
+        # "6 Stunden von Monza", "24 Hours of Le Mans", "Rolex 24 At Daytona", "8h Bahrain"
+        stunden = re.search(r"(?i)(\d+)\s*(?:stunden|hours|h\b)|rolex\s+(24)", e.name)
+        minuten = int(stunden.group(1) or stunden.group(2)) * 60 if stunden else STANDARD_RENNDAUER
+    else:
+        minuten = next((m for muster, m in ANDERE_DAUER if re.search(muster, s.name)),
+                       STANDARD_DAUER)
+    return s.start + timedelta(minutes=minuten)
+
+
 def serien_info(serie: str) -> dict:
     return SERIEN.get(serie, {"name": serie, "emoji": "🏁", "farbe": 0x888888})
 
@@ -385,19 +419,35 @@ def erinnerung(e: Event, s: Session, laeuft_bereits: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 # Discord
 # ---------------------------------------------------------------------------
-def senden(webhook: str, payload: dict, versuche: int = 4) -> None:
+def senden(webhook: str, payload: dict, versuche: int = 4) -> dict:
     """Postet an den Webhook. ?wait=true sorgt dafür, dass Discord Fehler zurückmeldet.
-    Bei Rate-Limit (429) oder Serverfehlern (5xx) wird mit Pause erneut versucht."""
+    Bei Rate-Limit (429) oder Serverfehlern (5xx) wird mit Pause erneut versucht.
+    Rückgabe: die gepostete Nachricht (u. a. mit "id"), damit sie später gelöscht werden kann."""
     url = webhook + ("&" if "?" in webhook else "?") + "wait=true"
-    daten = json.dumps(payload).encode()
+    return _discord_anfrage(url, "POST", json.dumps(payload).encode(), versuche)
+
+
+def nachricht_loeschen(webhook: str, nachricht_id: str) -> None:
+    """Löscht eine vom Webhook gepostete Nachricht. Schon gelöscht (404) zählt als erledigt."""
+    basis, _, abfrage = webhook.partition("?")
+    url = f"{basis.rstrip('/')}/messages/{nachricht_id}" + (f"?{abfrage}" if abfrage else "")
+    try:
+        _discord_anfrage(url, "DELETE", None)
+    except RuntimeError as e:
+        if "Status 404" not in str(e):
+            raise
+
+
+def _discord_anfrage(url: str, methode: str, daten: bytes | None, versuche: int = 4) -> dict:
     for versuch in range(1, versuche + 1):
         req = urllib.request.Request(
-            url, data=daten, method="POST",
+            url, data=daten, method=methode,
             headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
         )
         try:
-            with urllib.request.urlopen(req, timeout=20):
-                return
+            with urllib.request.urlopen(req, timeout=20) as antwort:
+                text = antwort.read().decode("utf-8", errors="replace")
+                return json.loads(text) if text.strip() else {}
         except urllib.error.HTTPError as e:
             if versuch < versuche and (e.code == 429 or e.code >= 500):
                 pause = 2.0 * versuch
@@ -420,6 +470,14 @@ def webhook_url(*namen: str) -> str:
             return url
     print("❌ DISCORD_WEBHOOK_URL ist nicht gesetzt.", file=sys.stderr)
     sys.exit(1)
+
+
+def webhook_name(*namen: str) -> str:
+    """Name der Umgebungsvariable, deren Webhook webhook_url(*namen) benutzen würde."""
+    for name in namen:
+        if (os.getenv(name) or "").strip():
+            return name
+    return "DISCORD_WEBHOOK_URL"
 
 
 def rollen_id() -> str | None:
@@ -464,8 +522,17 @@ def modus_uebersicht(args) -> int:
     if args.dry_run:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
-    senden(webhook_url(), payload)
-    print(f"✅ Wochenübersicht mit {len(events)} Event(s) gepostet.")
+    antwort = senden(webhook_url(), payload)
+    # Erst nach dem Rennwochenende löschen: Ende der letzten Session + LOESCHEN_NACH_MINUTEN,
+    # bei einem rennfreien Wochenende am Montag um 00:00.
+    enden = [session_ende(e, s) for e in events for s in e.sessions]
+    loeschen_ab = (max(enden) + loeschen_nach()) if enden else ende
+    if antwort.get("id"):
+        UEBERSICHT_DATEI.write_text(json.dumps(
+            {"id": str(antwort["id"]), "loeschen_ab": loeschen_ab.isoformat()},
+            ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(f"✅ Wochenübersicht mit {len(events)} Event(s) gepostet "
+          f"(wird gelöscht ab {loeschen_ab:%d.%m. %H:%M}).")
     return 0
 
 
@@ -483,6 +550,65 @@ def status_speichern(status: dict[str, str], jetzt: datetime) -> None:
                             encoding="utf-8")
 
 
+def loeschen_nach() -> timedelta:
+    return timedelta(minutes=int(os.getenv("LOESCHEN_NACH_MINUTEN", "60")))
+
+
+def loeschliste_laden() -> dict:
+    try:
+        daten = json.loads(LOESCH_DATEI.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        daten = {}
+    daten.setdefault("offen", {})     # Nachrichten-ID -> {"ab": ISO, "webhook": Variablenname}
+    daten.setdefault("erledigt", {})  # gelöschte Wochenübersichten: ID -> ISO-Zeitpunkt
+    return daten
+
+
+def loeschliste_speichern(daten: dict, jetzt: datetime) -> None:
+    grenze = jetzt - timedelta(days=14)
+    daten["erledigt"] = {k: v for k, v in daten["erledigt"].items()
+                         if datetime.fromisoformat(v) >= grenze}
+    LOESCH_DATEI.write_text(json.dumps(daten, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
+                            encoding="utf-8")
+
+
+def alte_nachrichten_loeschen(jetzt: datetime, dry_run: bool) -> None:
+    """Löscht fällige Erinnerungen und die Wochenübersicht nach dem Rennwochenende."""
+    if not ja(os.getenv("LOESCHEN"), True):
+        return
+    liste = loeschliste_laden()
+    faellig = [(nid, eintrag["webhook"]) for nid, eintrag in liste["offen"].items()
+               if datetime.fromisoformat(eintrag["ab"]) <= jetzt]
+    try:
+        ueb = json.loads(UEBERSICHT_DATEI.read_text(encoding="utf-8"))
+        if (ueb.get("id") and ueb["id"] not in liste["erledigt"]
+                and datetime.fromisoformat(ueb["loeschen_ab"]) <= jetzt):
+            faellig.append((ueb["id"], "UEBERSICHT"))
+    except (FileNotFoundError, ValueError, KeyError):
+        pass
+    geaendert = False
+    for nid, art in faellig:
+        name = "Wochenübersicht" if art == "UEBERSICHT" else "Erinnerung"
+        if dry_run:
+            print(f"🗑️  würde löschen: {name} {nid}")
+            continue
+        webhook = webhook_url() if art == "UEBERSICHT" else webhook_url(art)
+        try:
+            nachricht_loeschen(webhook, nid)
+        except (RuntimeError, OSError, http.client.HTTPException) as fehler:
+            print(f"⚠️  {name} {nid} konnte nicht gelöscht werden: {fehler}", file=sys.stderr)
+            continue  # beim nächsten Lauf erneut versuchen
+        if art == "UEBERSICHT":
+            liste["erledigt"][nid] = jetzt.isoformat()
+        else:
+            liste["offen"].pop(nid, None)
+        geaendert = True
+        print(f"🗑️  {name} gelöscht ({nid})", flush=True)
+        zeit.sleep(1)
+    if geaendert:
+        loeschliste_speichern(liste, jetzt)
+
+
 def modus_erinnerungen(args) -> int:
     jetzt = (datetime.strptime(args.jetzt, "%Y-%m-%d %H:%M").replace(tzinfo=BERLIN)
              if args.jetzt else datetime.now(BERLIN))
@@ -494,6 +620,8 @@ def modus_erinnerungen(args) -> int:
     nachholen = timedelta(minutes=int(os.getenv("NACHHOL_MINUTEN", "60")))
     warten_max = timedelta(minutes=int(os.getenv("WARTEN_MINUTEN", "50")))
     von, bis = jetzt - nachholen, jetzt + vorlauf + warten_max
+
+    alte_nachrichten_loeschen(jetzt, args.dry_run)
 
     faellig = filtern(alle_events(von, bis, Path(args.datei)), von, bis)
     status = status_laden()
@@ -533,14 +661,20 @@ def modus_erinnerungen(args) -> int:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
             continue
         try:
-            senden(webhook, payload)
-        except (RuntimeError, urllib.error.URLError, TimeoutError) as fehlermeldung:
+            antwort = senden(webhook, payload)
+        except (RuntimeError, OSError, http.client.HTTPException) as fehlermeldung:
             # Nicht abbrechen: die anderen Sessions trotzdem posten, diese beim nächsten Lauf erneut
             print(f"❌ {e.serie} {e.name} – {s.name}: {fehlermeldung}", file=sys.stderr)
             fehler += 1
             continue
         status[schluessel] = s.start.isoformat()
         status_speichern(status, jetzt)  # sofort merken, falls der Job später abbricht
+        if antwort.get("id"):  # zum Löschen nach dem Ende der Session vormerken
+            liste = loeschliste_laden()
+            liste["offen"][str(antwort["id"])] = {
+                "ab": (session_ende(e, s) + loeschen_nach()).isoformat(),
+                "webhook": webhook_name("ERINNERUNGEN_WEBHOOK_URL")}
+            loeschliste_speichern(liste, jetzt)
         print(f"✅ Erinnerung gepostet: {e.serie} {e.name} – {s.name}", flush=True)
         zeit.sleep(1)  # Discord-Limit freundlich behandeln
 

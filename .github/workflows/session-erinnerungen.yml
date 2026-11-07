@@ -36,14 +36,18 @@ jobs:
           WARTEN_MINUTEN: "50"    # so weit vorausschauen und im Job warten (GitHub startet oft nur stündlich)
           NACHHOL_MINUTEN: "60"   # verpasste Sessions bis so lange nach dem Start nachträglich posten
           WEC_AUTOMATISCH: "ja"   # WEC-Zeitplan automatisch von fiawec.com laden
+          LOESCHEN: "ja"          # Erinnerungen nach der Session und die Wochenübersicht nach dem Wochenende löschen
+          LOESCHEN_NACH_MINUTEN: "60"   # so lange nach dem Ende der Session wird gelöscht
         run: python bot.py --erinnerungen
       - name: Merken, was gepostet wurde
         if: always()
         run: |
-          if [ -f gepostet.json ] && [ -n "$(git status --porcelain gepostet.json)" ]; then
+          if [ -n "$(git status --porcelain gepostet.json loeschen.json)" ]; then
             git config user.name "rennwochenende-bot"
             git config user.email "rennwochenende-bot@users.noreply.github.com"
-            git add gepostet.json
+            for datei in gepostet.json loeschen.json; do
+              if [ -f "$datei" ]; then git add "$datei"; fi
+            done
             git commit -m "Gepostete Sessions aktualisiert"
             git pull --rebase --quiet || true
             git push

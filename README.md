@@ -86,6 +86,14 @@ dem Start noch nachträglich erinnert („Läuft bereits“). Fällt eine Quelle
 laufen die anderen Serien trotzdem weiter. In `gepostet.json` merkt er sich, was schon
 verschickt wurde, damit nichts doppelt kommt – diese Datei legt er selbst an.
 
+**Automatisch löschen:** Jede Erinnerung wird 60 Minuten nach dem (geschätzten) Ende ihrer
+Session wieder gelöscht, die Wochenübersicht vom Donnerstag erst 60 Minuten nach dem Ende der
+letzten Session des Wochenendes. Gelöscht wird beim nächsten Lauf danach, durch die stündlichen
+GitHub-Läufe also oft etwas später. Die Dauer schätzt der Bot (F1: Training 60, Qualifying 60,
+Rennen 120 min; WEC/IMSA/GTWC: Qualifying 20, Hyperpole 15, Training 90 min, Rennen laut Name,
+z. B. „6 Stunden“). Abschalten mit `LOESCHEN: "nein"`, Abstand ändern mit `LOESCHEN_NACH_MINUTEN`.
+Welche Nachrichten noch gelöscht werden, steht in `loeschen.json` und `uebersicht.json`.
+
 Kosten: Bei einem **öffentlichen** Repository sind GitHub Actions unbegrenzt kostenlos
 (die Webhook-URL bleibt trotzdem geheim, sie liegt in den Secrets). Bei einem **privaten**
 Repository würde der tägliche Lauf das kostenlose Kontingent von 2.000 Minuten pro Monat
@@ -100,6 +108,8 @@ strecke  = "Daytona International Speedway"
 zeitzone = "America/New_York"
 sessions = [
   { name = "Rennen (24 h)", start = "2027-01-23 13:40" },
+  # optional: Dauer in Minuten, damit die Erinnerung zur richtigen Zeit gelöscht wird
+  # { name = "Qualifying", start = "2027-01-22 15:20", dauer = 15 },
 ]
 ```
 Am einfachsten trägst du einmal zu Saisonbeginn alle Rennen ein, sobald die offiziellen
