@@ -78,6 +78,18 @@ Stand: 05.11.2026. Für die Einrichtung durch den Menschen siehe `README.md`.
   mehr `offen` – daher werden jetzt auch gelöschte Erinnerungen in `erledigt` vermerkt) und
   pusht mit bis zu 3 Versuchen.
 
+## Prüfung 10.11.2026: Fehler-Mails „Session-Erinnerungen – All jobs have failed“
+
+- Die Mail (Job „erinnern“, 26 s, 2 Annotations) gehört zu Lauf 42395940729 vom 07.11.2026
+  17:30 UTC: Schritt „Merken, was gepostet wurde“, `CONFLICT (add/add): Merge conflict in
+  loeschen.json` bei `git pull --rebase`, danach `fatal: You are not currently on a branch`
+  → exit 128. Das ist genau der Fall aus „Fix 07.11.2026“ (Commit 45ad4ce, 5 min später);
+  seitdem Fetch/Reset/`--status-vereinen`/Push mit 3 Versuchen. Keine Codeänderung nötig.
+- Einziger weiterer Fehlschlag: Lauf 42671646466 (09.11.2026 18:10 UTC) ohne einen einzigen
+  Job, „likely failed because of a workflow file issue“ – gleicher Commit und gleiche YAML wie
+  die erfolgreichen Läufe davor/danach, also ein Startfehler auf GitHub-Seite. Nicht behebbar.
+- Alle anderen Läufe seit dem Fix sind grün.
+
 ## Ziel des Projekts (Wünsche des Nutzers)
 
 Der Nutzer (deutschsprachig, Zeitzone Europe/Berlin) wollte einen Discord-Bot, der:
